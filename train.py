@@ -6,7 +6,7 @@ import numpy
 from layers import *
 import pandas as pd
 import pickle
-
+cp = None
 
 BATCH_SIZE = 64
 LEARNING_RATE = 0.0004
@@ -285,7 +285,9 @@ def main():
     if len(sys.argv)>1:
         device = sys.argv[1]
         if device == 'gpu':
-            import cupy as cp
+            import cupy
+            global cp
+            cp = cupy
      
     print(f'loading data on {device}')
     train_loader = DataLoader.create('train.csv', batch_size=BATCH_SIZE, train=True, device=device)
