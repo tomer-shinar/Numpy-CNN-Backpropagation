@@ -18,6 +18,36 @@ NOISE_RATE = 0.1
 
 np.random.seed(15)
 
+
+def translate(imgs, shift, direction, roll=True):
+    #assert direction in ['right', 'left', 'down', 'up'], 'Directions should be top|up|left|right'
+    new_imgs = []
+    for i,img in enumerate(imgs):
+        img = img.copy()
+        if direction[i] == 'right':
+            right_slice = img[:, -shift[i]:].copy()
+            img[:, shift[i]:] = img[:, :-shift[i]]
+            if roll:
+                img[:,:shift[i]] = np.fliplr(right_slice)
+        if direction[i] == 'left':
+            left_slice = img[:, :shift[i]].copy()
+            img[:, :-shift[i]] = img[:, shift[i]:]
+            if roll:
+                img[:, -shift[i]:] = left_slice
+        if direction[i] == 'down':
+            down_slice = img[-shift[i]:, :].copy()
+            img[shift[i]:, :] = img[:-shift[i],:]
+            if roll:
+                img[:shift[i], :] = down_slice
+        if direction[i] == 'up':
+            upper_slice = img[:shift[i], :].copy()
+            img[:-shift[i], :] = img[shift[i]:, :]
+            if roll:
+                img[-shift[i]:,:] = upper_slice
+        new_imgs.append(img)
+    return np.array(new_imgs)
+
+
 def rotate_img(imgs, angle, bg_patch=(5,5)):
     #assert len(img.shape) <= 3, "Incorrect image shape"
     new_imgs = []
@@ -55,29 +85,33 @@ def load_img(rows):
 class DataLoader:
 
     @staticmethod
-    def train_test_split(csv_file, batch_size=64, is_conv=True,normilize=True, device='cpu'):
+    def train_test_split(csv_file, batch_size=64, is_conv=True,normilize=True, device='cpu', labeled=True):
         if device=='cpu':
             np_device=np
         elif device=='gpu':
             np_device=cp
-        df = pd.read_csv(csv_file, header=None).to_numpy()
-        X = np_device.asarray(df[:, 1:])
-        y = np_device.asarray(df[:, 0].astype(int) - 1)
+        X,y = DataLoader.read_data(csv_file,np_device, labeled=labeled)
         X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.1, random_state=6)
         return DataLoader(X_train, y_train, batch_size=batch_size, is_conv=is_conv,train=True,normilize=normilize,device=device),DataLoader(X_val, y_val, batch_size=1, is_conv=is_conv,train=False,normilize=normilize,device=device)
 
     @staticmethod
-    def create(csv_file, batch_size=64, is_conv=True, train=False,normilize=True, device='cpu'):
+    def create(csv_file, batch_size=64, is_conv=True, train=False,normilize=True, device='cpu', labeled=True):
         if device=='cpu':
             np_device=np
         elif device=='gpu':
             np_device=cp
-        df = pd.read_csv(csv_file, header=None).to_numpy()
-        X = np_device.asarray(df[:, 1:])
-        y = np_device.asarray(df[:, 0].astype(int) - 1)
-        return DataLoader(X, y, batch_size=batch_size, is_conv=is_conv,normilize=normilize, device=device)
+        X,y = DataLoader.read_data(csv_file,np_device, labeled=labeled)
+        return DataLoader(X, y, batch_size=batch_size, is_conv=is_conv, train=train,normilize=normilize, device=device, labeled=labeled)
 
-    def __init__(self, X, Y, batch_size=64, is_conv=True,train=False, normilize=True, device='cpu'):
+    @staticmethod
+    def read_data(csv_file,np_device, labeled=True):
+        df = pd.read_csv(csv_file, header=None).to_numpy()
+        if labeled:
+            return np_device.asarray(df[:, 1:]), np_device.asarray(df[:, 0].astype(int) - 1)
+        else:
+            return np_device.asarray(df[:, 1:]), None
+
+    def __init__(self, X, Y, batch_size=64, is_conv=True,train=False, normilize=True, device='cpu', labeled=True):
         self.device=device
         if device=='cpu':
             self.np_device=np
@@ -91,7 +125,9 @@ class DataLoader:
         if is_conv:
             X = load_img(X)
         self.X = X
-        self.y = self.np_device.eye(10)[Y]
+        self.labeled = labeled
+        if self.labeled:
+            self.y = self.np_device.eye(10)[Y]
 
         if normilize:
             self.X = normilizeData(self.X)
@@ -119,7 +155,10 @@ class DataLoader:
                 yield (X[i*self.batch_size:(i+1)*self.batch_size], y[i*self.batch_size:(i+1)*self.batch_size])
         else:
             for i in range(len(self.X)//self.batch_size):
-                yield (self.X[i*self.batch_size:(i+1)*self.batch_size], self.y[i*self.batch_size:(i+1)*self.batch_size])
+                if self.labeled:
+                    yield (self.X[i*self.batch_size:(i+1)*self.batch_size], self.y[i*self.batch_size:(i+1)*self.batch_size])
+                else:
+                    yield self.X[i*self.batch_size:(i+1)*self.batch_size]
 
     def __len__(self):
         return len(self.X)
@@ -248,7 +287,7 @@ def main():
             import cupy as cp
      
     print(f'loading data on {device}')
-    train_loader = DataLoader.create('train.csv', batch_size=BATCH_SIZE, device=device)
+    train_loader = DataLoader.create('train.csv', batch_size=BATCH_SIZE, train=True, device=device)
     val_loader = DataLoader.create('validate.csv', batch_size=1, device=device)
     
     print(f'creating model on {device}')

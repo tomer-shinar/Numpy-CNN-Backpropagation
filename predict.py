@@ -1,6 +1,6 @@
 import pickle
 import sys
-from train import read_data
+from train import DataLoader
 import numpy as np
 
 
@@ -14,9 +14,9 @@ def main():
     model.eval()
 
     # load data
-    X_test, _ = read_data(test_file, False)
+    test_loader = DataLoader.create(csv_file=test_file, batch_size=1, train=False,normilize=True, device='cpu', labeled=False)
     # predict
-    y_pred = model.forward(X_test)
+    y_pred = model.forward(test_loader.X)
     preds = np.argmax(y_pred, axis=1)
     preds += 1
 
