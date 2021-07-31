@@ -5,6 +5,7 @@ from scipy.ndimage import rotate
 import numpy
 from layers import *
 import pandas as pd
+import pickle
 
 
 BATCH_SIZE = 64
@@ -295,7 +296,9 @@ def main():
     model.to(device=device)
     optimizer = Optimizer(lr=LEARNING_RATE, lr_decay=LR_DECAY, weight_decay=WEIGHT_DECAY)
  
-    train(model=model, train_loader=train_loader, val_loader=val_loader, optimizer=optimizer, epochs=EPOCHS)
+    #train(model=model, train_loader=train_loader, val_loader=val_loader, optimizer=optimizer, epochs=EPOCHS)
+    
+    model.save('model.pkl')
     
     
 if __name__== '__main__':

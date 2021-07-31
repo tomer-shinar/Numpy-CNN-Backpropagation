@@ -10,6 +10,7 @@ def main():
     # load model
     f = open(model_file, 'rb')
     model = pickle.load(f)
+    model.to('cpu')
     f.close()
     model.eval()
 

@@ -28,6 +28,8 @@ class Layer:
         elif device == 'gpu':
             import cupy as cp_device
             self.device = cp_device
+        else:
+            self.device = None
         self.memory_input, self.grads = None, None
 
     def forward(self, X):
@@ -39,16 +41,6 @@ class Layer:
 
     def fit(self, lr, weight_decay):
         assert self.on_train
-
-    def save(self, file_name):
-        """
-        save the model to pickle file.
-        :param file_name: the file name saving to.
-        """
-        self.to('cpu')
-        f = open(file_name, 'wb')
-        pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
-        f.close()
 
 
 class Dropout(Layer):
@@ -175,7 +167,8 @@ class Linear(Layer):
 
     def to(self, device='cpu'):
         super().to(device)
-        self.W, self.b = self.device.asarray(self.W), self.device.asarray(self.b)
+        if device is not None:
+            self.W, self.b = self.device.asarray(self.W), self.device.asarray(self.b)
 
     def xavier_init(self, m, n):
         limit = (6 / (n * m)) ** 0.5
@@ -210,7 +203,8 @@ class Conv2d(Layer):
 
     def to(self, device='cpu'):
         super().to(device)
-        self.W, self.b = self.device.asarray(self.W), self.device.asarray(self.b)
+        if device is not None:
+            self.W, self.b = self.device.asarray(self.W), self.device.asarray(self.b)
 
     def pad(self, X):
         b, h, w, c = X.shape
@@ -280,7 +274,8 @@ class BatchNorm(Layer):
 
     def to(self, device='cpu'):
         super().to(device)
-        self.gamma, self.beta = self.device.asarray(self.gamma), self.device.asarray(self.beta)
+        if device is not None:
+            self.gamma, self.beta = self.device.asarray(self.gamma), self.device.asarray(self.beta)
 
     def forward(self, X):
         eps = 1e-5
@@ -322,7 +317,7 @@ class ResidualCNN(Layer):
         ]
 
     def to(self, device='cpu'):
-        self.super().to(device)
+        super().to(device)
         for l in self.layers:
             l.to(device)
 
@@ -386,3 +381,15 @@ class Model(Layer):
         self.on_train = False
         for l in self.layers:
             l.eval()
+            
+    def save(self, file_name):
+        """
+        save the model to pickle file.
+        :param file_name: the file name saving to.
+        """
+        self.to('cpu')
+        self.to(None)
+        self.device=None
+        f = open(file_name, 'wb')
+        pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
+        f.close()
