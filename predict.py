@@ -11,6 +11,7 @@ def main():
     f = open(model_file, 'rb')
     model = pickle.load(f)
     f.close()
+    model.eval()
 
     # load data
     X_test, _ = read_data(test_file, False)
