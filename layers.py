@@ -166,9 +166,14 @@ class Linear(Layer):
         self.b = self.device.zeros(out_dim)
 
     def to(self, device='cpu'):
+        d = self.device
         super().to(device)
         if device is not None:
-            self.W, self.b = self.device.asarray(self.W), self.device.asarray(self.b)
+            if d == 'gpu' and device == 'cpu':
+                self.W, self.b = self.device.asarray(self.W.get()), self.device.asarray(self.b.get())
+            else:
+                self.W, self.b = self.device.asarray(self.W), self.device.asarray(self.b)
+
 
     def xavier_init(self, m, n):
         limit = (6 / (n * m)) ** 0.5
@@ -202,9 +207,14 @@ class Conv2d(Layer):
         return self.device.random.normal(size=shape) * (2 / n) ** 0.5
 
     def to(self, device='cpu'):
+        d = self.device
         super().to(device)
         if device is not None:
-            self.W, self.b = self.device.asarray(self.W), self.device.asarray(self.b)
+            if d == 'gpu' and device == 'cpu':
+                self.W, self.b = self.device.asarray(self.W.get()), self.device.asarray(self.b.get())
+            else:
+                self.W, self.b = self.device.asarray(self.W), self.device.asarray(self.b)
+
 
     def pad(self, X):
         b, h, w, c = X.shape
@@ -273,9 +283,13 @@ class BatchNorm(Layer):
         self.beta = self.device.zeros(shape)
 
     def to(self, device='cpu'):
+        d = self.device
         super().to(device)
         if device is not None:
-            self.gamma, self.beta = self.device.asarray(self.gamma), self.device.asarray(self.beta)
+            if d == 'gpu' and device == 'cpu':
+                self.gamma, self.beta = self.device.asarray(self.gamma.get()), self.device.asarray(self.beta.get())
+            else:
+                self.gamma, self.beta = self.device.asarray(self.gamma), self.device.asarray(self.beta)
 
     def forward(self, X):
         eps = 1e-5

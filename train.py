@@ -288,7 +288,7 @@ def main():
             import cupy
             global cp
             cp = cupy
-     
+        
     print(f'loading data on {device}')
     train_loader = DataLoader.create('train.csv', batch_size=BATCH_SIZE, train=True, device=device)
     val_loader = DataLoader.create('validate.csv', batch_size=1, device=device)
