@@ -166,12 +166,11 @@ class Linear(Layer):
         self.b = self.device.zeros(out_dim)
 
     def to(self, device='cpu'):
-        d = self.device
         super().to(device)
         if device is not None:
-            if d == 'gpu' and device == 'cpu':
+            try:
                 self.W, self.b = self.device.asarray(self.W.get()), self.device.asarray(self.b.get())
-            else:
+            except:
                 self.W, self.b = self.device.asarray(self.W), self.device.asarray(self.b)
 
 
@@ -207,12 +206,11 @@ class Conv2d(Layer):
         return self.device.random.normal(size=shape) * (2 / n) ** 0.5
 
     def to(self, device='cpu'):
-        d = self.device
         super().to(device)
         if device is not None:
-            if d == 'gpu' and device == 'cpu':
+            try:
                 self.W, self.b = self.device.asarray(self.W.get()), self.device.asarray(self.b.get())
-            else:
+            except:
                 self.W, self.b = self.device.asarray(self.W), self.device.asarray(self.b)
 
 
@@ -283,12 +281,11 @@ class BatchNorm(Layer):
         self.beta = self.device.zeros(shape)
 
     def to(self, device='cpu'):
-        d = self.device
         super().to(device)
         if device is not None:
-            if d == 'gpu' and device == 'cpu':
+            try:
                 self.gamma, self.beta = self.device.asarray(self.gamma.get()), self.device.asarray(self.beta.get())
-            else:
+            except:
                 self.gamma, self.beta = self.device.asarray(self.gamma), self.device.asarray(self.beta)
 
     def forward(self, X):
